@@ -6,6 +6,7 @@ import { IDiamond } from "../interfaces/IDiamond.sol";
 error FacetNotRegistered(address facet);
 error FacetAlreadyRegistered(address facet);
 error NotAuthorized();
+error InvalidFacetCutAction(IDiamond.FacetCutAction action);
 
 contract FacetRegistry {
     address public immutable owner;
@@ -14,8 +15,9 @@ contract FacetRegistry {
     mapping(bytes4 => bool) public isSelectorRegistered;
 
     event FacetRegistered(address indexed facet, bytes4[] selectors);
-    event FacetUnregistered(address indexed facet);
+    event FacetRemoved(address indexed facet);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
 
     constructor(address _owner) {
         owner = _owner;
@@ -39,7 +41,7 @@ contract FacetRegistry {
         emit FacetRegistered(_facet, _selectors);
     }
 
-    function unregisterFacet(address _facet) external onlyOwner {
+    function removeFacet(address _facet) external onlyOwner {
         if (!isFacetRegistered[_facet]) revert FacetNotRegistered(_facet);
         
         bytes4[] memory selectors = facetSelectors[_facet];
@@ -50,7 +52,7 @@ contract FacetRegistry {
         delete isFacetRegistered[_facet];
         delete facetSelectors[_facet];
         
-        emit FacetUnregistered(_facet);
+        emit FacetRemoved(_facet);
     }
 
     function validateFacetCut(IDiamond.FacetCut[] calldata _diamondCut) external view {
@@ -69,8 +71,14 @@ contract FacetRegistry {
                 for (uint j = 0; j < selectors.length; j++) {
                     if (!isSelectorRegistered[selectors[j]]) revert FacetNotRegistered(facet);
                 }
+            } else if (action == IDiamond.FacetCutAction.Remove) {
+                // For Remove action, only check if selectors are registered
+                for (uint j = 0; j < selectors.length; j++) {
+                    if (!isSelectorRegistered[selectors[j]]) revert FacetNotRegistered(facet);
+                }
+            } else {
+                revert InvalidFacetCutAction(action);
             }
-            // Remove action doesn't need validation as it's removing existing functions
         }
     }
 }
