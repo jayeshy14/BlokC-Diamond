@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.0;
 
 import "../lib/forge-std/src/Script.sol";
 import "../src/Diamond.sol";
@@ -28,20 +28,31 @@ contract DeployScript is Script, HelperContract {
         vm.startBroadcast(deployerPrivateKey);
 
         DeploymentData memory deploymentData;
-        
+
         // Deploy registry first
         deploymentData.registry = new FacetRegistry(deployerAddress);
-        
+
         // Deploy facets
-        deploymentData.cutFacet = new DiamondCutFacet(address(deploymentData.registry));
+        deploymentData.cutFacet = new DiamondCutFacet(
+            address(deploymentData.registry)
+        );
         deploymentData.loupeFacet = new DiamondLoupeFacet();
         deploymentData.ownershipFacet = new OwnershipFacet();
         deploymentData.init = new DiamondInit();
 
         // Register initial facets
-        deploymentData.registry.registerFacet(address(deploymentData.cutFacet), generateSelectors("DiamondCutFacet"));
-        deploymentData.registry.registerFacet(address(deploymentData.loupeFacet), generateSelectors("DiamondLoupeFacet"));
-        deploymentData.registry.registerFacet(address(deploymentData.ownershipFacet), generateSelectors("OwnershipFacet"));
+        deploymentData.registry.registerFacet(
+            address(deploymentData.cutFacet),
+            generateSelectors("DiamondCutFacet")
+        );
+        deploymentData.registry.registerFacet(
+            address(deploymentData.loupeFacet),
+            generateSelectors("DiamondLoupeFacet")
+        );
+        deploymentData.registry.registerFacet(
+            address(deploymentData.ownershipFacet),
+            generateSelectors("OwnershipFacet")
+        );
 
         // Diamond arguments
         DiamondArgs memory _args = DiamondArgs({
@@ -74,7 +85,10 @@ contract DeployScript is Script, HelperContract {
         deploymentData.diamond = new Diamond(cut, _args);
 
         // Log deployed addresses
-        console.log("facetRegistry deployed at:", address(deploymentData.registry));
+        console.log(
+            "facetRegistry deployed at:",
+            address(deploymentData.registry)
+        );
         console.log("diamond deployed at:", address(deploymentData.diamond));
 
         vm.stopBroadcast();
